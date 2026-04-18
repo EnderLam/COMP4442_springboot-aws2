@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="auth-box">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <a href="register.html">No account? Register</a>
+    <a href="index.html">Back to home</a>
+</main>
+
+<script>
+function login(){
+    fetch('/users/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        })
+    })
+    .then(res=>res.json())
+    .then(result=>{
+        if(result.success){
+            localStorage.setItem("user", JSON.stringify(result.user));
+            window.location.href="index.html";
+        }else{
+            alert(result.message || "Login failed");
+        }
+    });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="auth-box">
+    <h2>Payment Simulation</h2>
+    <input id="holder" placeholder="Card holder name" />
+    <input id="cardNumber" placeholder="Card number" />
+    <input id="expiry" placeholder="MM/YY" />
+    <input id="cvv" placeholder="CVV" />
+    <button onclick="pay()">Confirm Payment</button>
+    <a href="index.html">Back to home</a>
+</main>
+
+<script>
+function pay(){
+    let user = JSON.parse(localStorage.getItem("user"));
+
+    if(!user){
+        alert("Login required");
+        return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const orderId = Number(params.get("orderId"));
+    if(!orderId){
+        alert("Order id is required");
+        return;
+    }
+
+    fetch('/payment', {
+        method:'POST',
+        headers:{
+            'Content-Type':'application/json'
+        },
+        body: JSON.stringify({
+            orderId,
+            cardHolderName: document.getElementById("holder").value,
+            cardNumber: document.getElementById("cardNumber").value,
+            expiry: document.getElementById("expiry").value,
+            cvv: document.getElementById("cvv").value
+        })
+    })
+    .then(res=>res.text())
+    .then(msg => {
+        alert(msg);
+        if(msg.toLowerCase().includes("successful")){
+            window.location.href = "index.html";
+        }
+    });
+}
+</script>
+
+</body>
+</html>

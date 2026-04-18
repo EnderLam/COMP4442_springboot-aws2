@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Shop Service Computing Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+    <div>
+        <h1>E-Shop</h1>
+        <p class="subtitle">Browse products without login. Actions depend on your role.</p>
+    </div>
+    <div id="userArea"></div>
+</header>
+
+<main class="container">
+    <section class="panel">
+        <h2>Products</h2>
+        <div id="productContainer" class="grid"></div>
+    </section>
+
+    <section id="sellerPanel" class="panel hidden">
+        <h2>Seller Product Management</h2>
+        <form id="productForm">
+            <input id="pName" placeholder="Product name" required>
+            <input id="pPrice" type="number" step="0.01" min="0" placeholder="Price" required>
+            <input id="pStock" type="number" min="0" placeholder="Stock" required>
+            <input id="pImage" type="file" accept="image/*" required>
+            <button type="submit">Add Product</button>
+        </form>
+    </section>
+
+    <section id="orderPanel" class="panel hidden">
+        <h2>Order Management</h2>
+        <button onclick="loadOrders()">Refresh Orders</button>
+        <div id="orderContainer"></div>
+    </section>
+</main>
+
+<script>
+const user = JSON.parse(localStorage.getItem("user") || "null");
+
+function authHeaders() {
+    return {};
+}
+
+function renderUser() {
+    const area = document.getElementById("userArea");
+    if (!user) {
+        area.innerHTML = `<a href="login.html" class="btn">Login</a> <a href="register.html" class="btn secondary">Register</a>`;
+        return;
+    }
+    area.innerHTML = `<span class="welcome">Hi, ${user.username} (${user.role})</span> <button class="btn" onclick="logout()">Logout</button>`;
+    if (user.role === "admin") {
+        area.innerHTML += ` <a class="btn secondary" href="admin.html">Admin</a>`;
+    }
+    if (user.role === "seller" || user.role === "admin") {
+        document.getElementById("sellerPanel").classList.remove("hidden");
+    }
+    document.getElementById("orderPanel").classList.remove("hidden");
+}
+
+function logout() {
+    fetch("/users/logout", { method: "POST", headers: authHeaders() }).catch(() => {});
+    localStorage.removeItem("user");
+    location.reload();
+}
+
+function loadProducts() {
+    fetch("/products")
+        .then(res => res.json())
+        .then(products => {
+            const container = document.getElementById("productContainer");
+            container.innerHTML = "";
+            products.forEach(p => {
+                container.innerHTML += `
+                    <article class="card">
+                        <img src="${p.imageUrl || "https://placehold.co/300x200?text=No+Image"}" alt="${p.name}">
+                        <h3>${p.name}</h3>
+                        <p>Seller: ${p.seller || "N/A"}</p>
+                        <p>Stock: ${p.stock}</p>
+                        <p class="price">$${Number(p.price).toFixed(2)}</p>
+                        ${renderProductActions(p)}
+                    </article>
+                `;
+            });
+        });
+}
+
+function renderProductActions(p) {
+    if (!user) return `<small>Login as buyer to place order</small>`;
+    if (user.role === "buyer" || user.role === "admin") {
+        return `<button onclick="createOrder(${p.id})">Order</button>`;
+    }
+    if (user.role === "seller" || user.role === "admin") {
+        return `<button class="danger" onclick="deleteProduct(${p.id})">Delete</button>`;
+    }
+    return "";
+}
+
+function createOrder(productId) {
+    const quantity = Number(prompt("Order quantity:", "1"));
+    if (!quantity || quantity < 1) return;
+    fetch("/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ productId, quantity })
+    })
+        .then(res => res.text())
+        .then(msg => {
+            alert(msg);
+            loadProducts();
+            loadOrders();
+        });
+}
+
+function loadOrders() {
+    if (!user) return;
+    fetch("/orders", { headers: authHeaders() })
+        .then(res => res.json())
+        .then(orders => {
+            const container = document.getElementById("orderContainer");
+            if (!orders.length) {
+                container.innerHTML = "<p>No orders yet.</p>";
+                return;
+            }
+            container.innerHTML = orders.map(o => `
+                <div class="order-row">
+                    <span>#${o.id} product:${o.productId} qty:${o.quantity} status:${o.status}</span>
+                    <div>
+                        ${(user.role === "buyer" || user.role === "admin") ? `<button onclick="goPay(${o.id})">Pay</button>` : ""}
+                        <button class="danger" onclick="deleteOrder(${o.id})">Remove</button>
+                    </div>
+                </div>
+            `).join("");
+        });
+}
+
+function goPay(orderId) {
+    window.location.href = `payment.html?orderId=${orderId}`;
+}
+
+function deleteOrder(orderId) {
+    fetch(`/orders/${orderId}`, { method: "DELETE", headers: authHeaders() })
+        .then(res => res.text())
+        .then(msg => {
+            alert(msg);
+            loadOrders();
+        });
+}
+
+function deleteProduct(productId) {
+    fetch(`/products/${productId}`, { method: "DELETE", headers: authHeaders() })
+        .then(res => res.text())
+        .then(msg => {
+            alert(msg);
+            loadProducts();
+        });
+}
+
+const productForm = document.getElementById("productForm");
+productForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const form = new FormData();
+    form.append("name", document.getElementById("pName").value);
+    form.append("price", document.getElementById("pPrice").value);
+    form.append("stock", document.getElementById("pStock").value);
+    form.append("file", document.getElementById("pImage").files[0]);
+
+    fetch("/products/upload", {
+        method: "POST",
+        headers: authHeaders(),
+        body: form
+    })
+        .then(res => res.text())
+        .then(msg => {
+            alert(msg);
+            productForm.reset();
+            loadProducts();
+        });
+});
+
+renderUser();
+loadProducts();
+loadOrders();
+</script>
+</body>
+</html>

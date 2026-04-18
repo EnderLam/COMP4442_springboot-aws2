@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="container">
+    <section class="panel">
+        <h2>Admin Management</h2>
+        <p>Manage users, roles, products, orders, and payments.</p>
+        <a class="btn secondary" href="index.html">Back to home</a>
+    </section>
+
+    <section class="panel">
+        <h3>Users</h3>
+        <button onclick="loadUsers()">Refresh Users</button>
+        <div id="users"></div>
+    </section>
+
+    <section class="panel">
+        <h3>Products</h3>
+        <button onclick="loadProducts()">Refresh Products</button>
+        <pre id="products"></pre>
+    </section>
+
+    <section class="panel">
+        <h3>Orders</h3>
+        <button onclick="loadOrders()">Refresh Orders</button>
+        <pre id="orders"></pre>
+    </section>
+
+    <section class="panel">
+        <h3>Payments</h3>
+        <button onclick="loadPayments()">Refresh Payments</button>
+        <pre id="payments"></pre>
+    </section>
+</main>
+
+<script>
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if (!user || user.role !== "admin") {
+    alert("Admin login required");
+    window.location.href = "login.html";
+}
+
+function authHeaders() {
+    return { "Content-Type": "application/json" };
+}
+
+function loadUsers() {
+    fetch("/admin/users", { headers: authHeaders() })
+        .then(r => r.json())
+        .then(users => {
+            const box = document.getElementById("users");
+            box.innerHTML = users.map(u => `
+                <div class="order-row">
+                    <span>#${u.id} ${u.username} (${u.role})</span>
+                    <select onchange="changeRole(${u.id}, this.value)">
+                        <option value="">Change role...</option>
+                        <option value="buyer">buyer</option>
+                        <option value="seller">seller</option>
+                        <option value="admin">admin</option>
+                    </select>
+                </div>
+            `).join("");
+        });
+}
+
+function changeRole(id, role) {
+    if (!role) return;
+    fetch(`/admin/users/${id}/role`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ role })
+    })
+        .then(r => r.text())
+        .then(msg => {
+            alert(msg);
+            loadUsers();
+        });
+}
+
+function loadProducts() {
+    fetch("/admin/products", { headers: authHeaders() })
+        .then(r => r.json())
+        .then(d => document.getElementById("products").textContent = JSON.stringify(d, null, 2));
+}
+
+function loadOrders() {
+    fetch("/admin/orders", { headers: authHeaders() })
+        .then(r => r.json())
+        .then(d => document.getElementById("orders").textContent = JSON.stringify(d, null, 2));
+}
+
+function loadPayments() {
+    fetch("/admin/payments", { headers: authHeaders() })
+        .then(r => r.json())
+        .then(d => document.getElementById("payments").textContent = JSON.stringify(d, null, 2));
+}
+
+loadUsers();
+loadProducts();
+loadOrders();
+loadPayments();
+</script>
+</body>
+</html>
