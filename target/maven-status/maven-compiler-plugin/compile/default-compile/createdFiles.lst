@@ -1,12 +1,15 @@
 group16/comp4442_project/controller/AdminController.class
 group16/comp4442_project/config/AuthInterceptor.class
+group16/comp4442_project/service/TrackingService.class
 group16/comp4442_project/model/User.class
 group16/comp4442_project/config/StaticResourceConfig.class
 group16/comp4442_project/service/UserService.class
 group16/comp4442_project/service/PaymentService.class
 group16/comp4442_project/Comp4442ProjectApplication.class
+group16/comp4442_project/model/Tracking.class
 group16/comp4442_project/model/Order.class
 group16/comp4442_project/dao/OrderDAO.class
+group16/comp4442_project/dao/TrackingDAO.class
 group16/comp4442_project/dao/UserDAO.class
 group16/comp4442_project/controller/ProductController.class
 group16/comp4442_project/controller/OrderController.class
@@ -20,4 +23,5 @@ group16/comp4442_project/controller/UserController.class
 group16/comp4442_project/model/Product.class
 group16/comp4442_project/dao/PaymentDAO.class
 group16/comp4442_project/config/WebConfig.class
+group16/comp4442_project/controller/TrackingController.class
 group16/comp4442_project/dao/ProductDAO.class

@@ -39,3 +39,13 @@ CREATE TABLE IF NOT EXISTS payments (
     CONSTRAINT fk_payments_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS trackings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL UNIQUE,
+    location_description VARCHAR(255) NOT NULL,
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_trackings_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);

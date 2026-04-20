@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-Shop Service Computing Demo</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -38,10 +40,18 @@
         <div id="orderContainer"></div>
     </section>
 </main>
-
+<div id="trackingModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeTrackingModal()">&times;</span>
+        <h3>Order Tracking</h3>
+        <div id="trackingMap"></div>
+        <div id="trackingDetails" class="tracking-info"></div>
+    </div>
+</div>
 <script>
 const user = JSON.parse(localStorage.getItem("user") || "null");
-
+let currentMap = null;
+let currentMarker = null;
 function authHeaders() {
     return {};
 }
@@ -132,6 +142,7 @@ function loadOrders() {
                     <div>
                         ${(user.role === "buyer" || user.role === "admin") ? `<button onclick="goPay(${o.id})">Pay</button>` : ""}
                         <button class="danger" onclick="deleteOrder(${o.id})">Remove</button>
+                        <button onclick="showTracking(${o.id})">Track</button>
                     </div>
                 </div>
             `).join("");
@@ -181,7 +192,49 @@ productForm.addEventListener("submit", (e) => {
             loadProducts();
         });
 });
+function showTracking(orderId) {
+    fetch(`/tracking/${orderId}`)
+        .then(res => res.json())
+        .then(data => {
+            const modal = document.getElementById("trackingModal");
+            modal.style.display = "flex";
+            // display tracking details
+            const detailsDiv = document.getElementById("trackingDetails");
+            detailsDiv.innerHTML = `
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Location:</strong> ${data.locationDescription}</p>
+                <p><strong>Last Update:</strong> ${new Date(data.lastUpdate).toLocaleString()}</p>
+                <p><strong>Coordinates:</strong> ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}</p>
+            `;
+            // initialize or update map
+            const mapDiv = document.getElementById("trackingMap");
+            if (currentMap) {
+                currentMap.remove();
+                currentMap = null;
+            }
+            currentMap = L.map(mapDiv).setView([data.latitude, data.longitude], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(currentMap);
+            if (currentMarker) {
+                currentMarker.remove();
+            }
+            currentMarker = L.marker([data.latitude, data.longitude]).addTo(currentMap)
+                .bindPopup(`Order #${orderId}<br>${data.locationDescription}`)
+                .openPopup();
+        })
+        .catch(err => {
+            alert("Failed to load tracking data: " + err);
+        });
+}
 
+function closeTrackingModal() {
+    document.getElementById("trackingModal").style.display = "none";
+    if (currentMap) {
+        currentMap.remove();
+        currentMap = null;
+    }
+}
 renderUser();
 loadProducts();
 loadOrders();

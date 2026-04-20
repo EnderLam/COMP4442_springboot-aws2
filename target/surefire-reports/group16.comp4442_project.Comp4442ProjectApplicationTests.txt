@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: group16.comp4442_project.Comp4442ProjectApplicationTests
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.010 s -- in group16.comp4442_project.Comp4442ProjectApplicationTests
